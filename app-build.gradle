@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.hameed.grades'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId project.findProperty('appId') ?: 'com.hameed.grades'
+        minSdk 29
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+        resValue 'string', 'app_name', (project.findProperty('appName') ?: 'Grades')
+    }
+
+    signingConfigs {
+        main {
+            storeFile file('../grades.keystore')
+            storePassword 'grades123'
+            keyAlias 'grades'
+            keyPassword 'grades123'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.main
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.11.0'
+}
