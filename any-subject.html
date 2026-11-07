@@ -961,7 +961,7 @@ const RC=`#pt .rp{font-family:-apple-system,"Geeza Pro",Tahoma,Arial,sans-serif;
 #pt .rp td.n{text-align:right}
 #pt .rp th.tt,#pt .rp td.tt,#pt .rp tr.tt td{background:#fff2cc;font-weight:700}
 #pt .rp .v{writing-mode:vertical-rl;transform:rotate(180deg);height:122px;margin:auto;line-height:1.1;font-size:9.5px;font-weight:700;white-space:nowrap}
-#pt .rp.cl table{font-size:10px;table-layout:fixed}#pt .rp.cl thead{display:table-header-group}#pt .rp.cl tr{break-inside:avoid;page-break-inside:avoid}#pt .rp.cl th{vertical-align:middle}#pt .rp.cl td{height:23px;vertical-align:middle}#pt .rp.cl td.n{font-size:10.5px;line-height:1.25}#pt .rp.cl td{padding:3px 1px}
+#pt .rp.cl table{font-size:10px;table-layout:fixed}#pt .rp.cl thead{display:table-header-group}#pt .rp.cl tr,#pt .rp.cl td{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}#pt .rp.cl table{page-break-inside:auto}#pt .rp.cl td,#pt .rp.cl th{box-sizing:border-box}#pt .rp.cl th{vertical-align:middle}#pt .rp.cl td{height:23px;vertical-align:middle}#pt .rp.cl td.n{font-size:10.5px;line-height:1.25}#pt .rp.cl td{padding:3px 1px}
 #pt .rp .gh{background:#eef2fa;text-align:right;font-weight:700}
 #pt .rp .bar{height:7px;background:#e3e6ee;border-radius:4px;overflow:hidden}#pt .rp .bar i{display:block;height:100%;background:#2f6fed}
 #pt .rp .boxes{display:flex;gap:10px;margin-bottom:12px}
@@ -1006,27 +1006,35 @@ function pname(n){n=String(n||'');return n.replace(/^\s*[\d٠-٩۰-۹]+\s*[-.)\u
 
 
 
+function pgRanges(extra,pct){
+ const fixed=(hdrHTML()?64:0)+(isPro()?0:24)+165+extra,avail=Math.max(160,725-fixed),w=Math.max(60,1062*pct-10);
+ const hs=S.map(s=>{const L=Math.max(1,Math.ceil(String(pname(s.name)).length*6/w));return Math.max(s.photo?30:23,L*13.2+7)});
+ const pack=lim=>{const o=[];let a=0,h=0;hs.forEach((r,i)=>{if(i>a&&h+r>lim){o.push([a,i]);a=i;h=0}h+=r});if(a<hs.length||!o.length)o.push([a,hs.length]);return o};
+ const best=pack(avail);
+ return best}
 function periodTableHTML(p){
  const P=CR[p],its=pfVis(P),n=its.length,tc=pfTot(),fs=n>8?'9px':n>6?'10px':'11px',hh=Math.min(210,Math.max(80,Math.round(Math.max(0,...its.map(i=>(String(i.label)+' ('+i.max+')').length))*5)));
  const top=`<tr><th rowspan="2">م</th><th rowspan="2">اسم الطالب</th><th colspan="${n}">${esc(P.title)}${tc?' ('+pMax(P)+' درجة)':''}</th>${tc?(n>7?`<th rowspan="2" class="tt"><div class="v" style="height:${hh}px">المجموع (${pMax(P)})</div></th>`:`<th rowspan="2" class="tt">المجموع (${pMax(P)})</th>`):''}</tr><tr>${its.map(i=>n>7?`<th${i.cnt?' class="tt"':''}><div class="v" style="height:${hh}px">${esc(i.label)} (${i.max})</div></th>`:`<th style="font-size:${fs}">${esc(i.label)} (${i.max})</th>`).join('')}</tr>`;
  const cg=`<colgroup><col style="width:28px"><col style="width:${n>12?'20%':n>8?'24%':'30%'}"></colgroup>`;
- const rows=S.map((s,i)=>`<tr><td>${i+1}</td><td class="n avatar-cell">${s.photo?`<img src="${s.photo}" alt=""> `:''}${esc(pname(s.name))}</td>${its.map(it=>`<td${(it.cnt&&n>7)?' class="tt"':''}>${cv(iv(s,P,it))}</td>`).join('')}${tc?`<td class="tt">${cv(pT(s,P))}</td>`:''}</tr>`).join('');
- return `<table>${cg}<thead>${top}</thead><tbody>${rows}</tbody></table>`;
+ const row=(s,i)=>`<tr><td>${i+1}</td><td class="n avatar-cell">${s.photo?`<img src="${s.photo}" alt=""> `:''}${esc(pname(s.name))}</td>${its.map(it=>`<td${(it.cnt&&n>7)?' class="tt"':''}>${cv(iv(s,P,it))}</td>`).join('')}${tc?`<td class="tt">${cv(pT(s,P))}</td>`:''}</tr>`;
+ const pct=n>12?.2:n>8?.24:.3;
+ return pgRanges(n>7?hh+32:60,pct).map(([a,b])=>`<table>${cg}<thead>${top}</thead><tbody>${S.slice(a,b).map((s,j)=>row(s,a+j)).join('')}</tbody></table>`);
 }
 function summaryTableHTML(){
  const W=WMAX(),E=EXM(),M=MAXALL(),N=CR.length,tc=pfTot(),ex=!!E&&pfExam();
  const top=`<tr><th>م</th><th>اسم الطالب</th>${tc?CR.map(p=>`<th>${esc(p.title)} (${pMax(p)})</th>`).join(''):''}${(tc&&N>1)?`<th class="tt">${WLBL()} (${W})</th>`:''}${ex?`<th>${esc(CF().exam.label)} (${E})</th>`:''}${(tc&&!SAME())?`<th class="tt">المجموع النهائي (${M})</th>`:''}${tc?'<th>النسبة</th>':''}</tr>`;
  const cg=`<colgroup><col style="width:28px"><col style="width:30%"></colgroup>`;
- const rows=S.map((s,i)=>{const fin=isFull(s);
-  return `<tr><td>${i+1}</td><td class="n avatar-cell">${s.photo?`<img src="${s.photo}" alt=""> `:''}${esc(pname(s.name))}</td>${tc?CR.map(p=>`<td>${cv(pT(s,p))}</td>`).join(''):''}${(tc&&N>1)?`<td class="tt">${worksDone(s)?f(tot(s)):''}</td>`:''}${ex?`<td>${hasExam(s)?f(exam(s)):''}</td>`:''}${(tc&&!SAME())?`<td class="tt">${fin?f(finalTot(s)):''}</td>`:''}${tc?`<td>${fin?(finalTot(s)/M*100).toFixed(1)+'%':''}</td>`:''}</tr>`}).join('');
- return `<table>${cg}<thead>${top}</thead><tbody>${rows}</tbody></table>`;
+ const row=(s,i)=>{const fin=isFull(s);
+  return `<tr><td>${i+1}</td><td class="n avatar-cell">${s.photo?`<img src="${s.photo}" alt=""> `:''}${esc(pname(s.name))}</td>${tc?CR.map(p=>`<td>${cv(pT(s,p))}</td>`).join(''):''}${(tc&&N>1)?`<td class="tt">${worksDone(s)?f(tot(s)):''}</td>`:''}${ex?`<td>${hasExam(s)?f(exam(s)):''}</td>`:''}${(tc&&!SAME())?`<td class="tt">${fin?f(finalTot(s)):''}</td>`:''}${tc?`<td>${fin?(finalTot(s)/M*100).toFixed(1)+'%':''}</td>`:''}</tr>`};
+ return pgRanges(50,.3).map(([a,b])=>`<table>${cg}<thead>${top}</thead><tbody>${S.slice(a,b).map((s,j)=>row(s,a+j)).join('')}</tbody></table>`);
 }
 function classHTML(){
  const N=CR.length,lbl=i=>i<N?CR[i].title:'الملخص النهائي';
  const sg=n=>`<div class="sig"><span>المعلم: ${esc(DB.settings.teacher||'................................')}</span><span>رئيس القسم: ................................</span></div><div class="page-footer">${esc(lbl(n-1))}</div>`;
- const pages=CR.map((p,i)=>!pfPageOK(p)?'':`<div class="rp cl">${head(T('كشف متابعة درجات '+SUBJ()),esc(p.title))}${periodTableHTML(i)}${sg(i+1)}</div><div class="pb"></div>`).join('');
+ const pg=[];CR.forEach((p,i)=>{if(!pfPageOK(p))return;periodTableHTML(i).forEach(tb=>pg.push(`<div class="rp cl">${head(T('كشف متابعة درجات '+SUBJ()),esc(p.title))}${tb}${sg(i+1)}</div>`))});
  const sub=EXM()?'مجموع الأعمال ('+WMAX()+') + '+esc(CF().exam.label)+' ('+EXM()+') = '+MAXALL()+' درجة':'مجموع الأعمال = '+WMAX()+' درجة';
- return pages+((pfTot()||(EXM()&&pfExam()))?`<div class="rp cl">${head(T('الملخص النهائي لأعمال الفصل'),sub)}${summaryTableHTML()}${sg(N+1)}</div>`:'');
+ if(pfTot()||(EXM()&&pfExam()))summaryTableHTML().forEach(tb=>pg.push(`<div class="rp cl">${head(T('الملخص النهائي لأعمال الفصل'),sub)}${tb}${sg(N+1)}</div>`));
+ return pg.join('<div class="pb"></div>');
 }
 function stuHTML(s){
  const M=MAXALL();
@@ -1044,34 +1052,7 @@ function stuHTML(s){
   <div class="sig"><span>المعلم: ${esc(DB.settings.teacher||'....................')}</span><span>ولي الأمر: ....................</span></div></div>`;
 }
 
-/* تقسيم جدول الكشف على الصفحات بالقياس الفعلي: لا يُقطع أي صف (اسم) بين ورقتين.
-   الصفحة الأولى فيها الترويسة، وتتكرر رأس الجدول في كل صفحة، والتوقيع في الأخيرة. */
-function splitRows(h,c1,c2,botH){const n=h.length,tot=h.reduce((a,b)=>a+b,0);
- const cap=(k,j)=>k==1?c1-botH:(j==0?c1:(j==k-1?c2-botH:c2));
- const fit=(k,L)=>{const ch=[];let i=0;for(let j=0;j<k;j++){const c=Math.min(L,cap(k,j));let t=0;const s0=i;while(i<n&&t+h[i]<=c){t+=h[i];i++}ch.push([s0,i])}return i>=n?ch:null};
- for(let k=1;k<=n;k++){const hi0=Math.max(c1,c2);let best=fit(k,hi0);if(!best)continue;let lo=tot/k,hi=hi0;
-  for(let it=0;it<24;it++){const m=(lo+hi)/2,t=fit(k,m);if(t){best=t;hi=m}else lo=m}
-  return best.filter(c=>c[1]>c[0])}
- return h.map((_,i)=>[i,i+1])}
-function paginateCL(html){let fr=null;try{
- const PW=1000,PH=680;/* A4 أفقي: نقيس بعرض أضيق قليلًا (1000px) ونترك هامش ارتفاع (680px من 733px) تحسبًا لهوامش الطابعة في تطبيقي الآيفون والأندرويد */
- fr=document.createElement('iframe');fr.style.cssText='position:fixed;left:-20000px;top:0;width:'+PW+'px;height:900px;border:0;visibility:hidden';document.body.appendChild(fr);
- const d=fr.contentDocument;d.open();d.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><style>body{margin:0;padding:0;background:#fff}</style>'+sty(true)+'</head><body><div id="pt" style="display:block">'+html+'</div></body></html>');d.close();
- const root=d.getElementById('pt'),out=[];let changed=false;
- [...root.children].forEach(el=>{
-  if(el.classList.contains('pb'))return;
-  const tbl=el.classList.contains('rp')&&el.classList.contains('cl')?el.querySelector('table'):null,tb=tbl&&tbl.tBodies[0];
-  if(!tb||tb.rows.length<2){out.push(el.outerHTML);return}
-  const R=x=>x.getBoundingClientRect(),eb=R(el),tr=R(tbl),topH=tr.top-eb.top,botH=eb.bottom-tr.bottom,thH=R(tbl.tHead).height;
-  const hs=[...tb.rows].map(r=>R(r).height),ch=splitRows(hs,PH-topH-thH,PH-thH,botH);
-  if(ch.length<2){out.push(el.outerHTML);return}
-  changed=true;
-  ch.forEach((c,j)=>{const cl=el.cloneNode(true),t=cl.querySelector('table');[...cl.querySelector('tbody').rows].forEach((r,i)=>{if(i<c[0]||i>=c[1])r.remove()});
-   if(j>0)while(cl.firstElementChild&&cl.firstElementChild!==t)cl.removeChild(cl.firstElementChild);
-   if(j<ch.length-1)cl.querySelectorAll('.sig,.page-footer').forEach(x=>x.remove());
-   out.push(cl.outerHTML)})});
- return changed?out.join('<div class="pb"></div>'):html}catch(e){return html}finally{if(fr&&fr.parentNode)fr.parentNode.removeChild(fr)}}
-function build(){const s=S.find(x=>x.id===sel);if(pk==='notes')return{h:notesHTML(),land:false,name:'تقرير_ملاحظات_'+safeName(curC().name)};if(pk==='student'&&s)return{h:stuHTML(s),land:false,name:'تقرير_'+safeName(s.name)};return{h:paginateCL(classHTML()),land:true,name:'كشف_درجات_'+safeName(curC().name)}}
+function build(){const s=S.find(x=>x.id===sel);if(pk==='notes')return{h:notesHTML(),land:false,name:'تقرير_ملاحظات_'+safeName(curC().name)};if(pk==='student'&&s)return{h:stuHTML(s),land:false,name:'تقرير_'+safeName(s.name)};return{h:classHTML(),land:true,name:'كشف_درجات_'+safeName(curC().name)}}
 const sty=land=>`<style>@page{size:A4 ${land?'landscape':'portrait'};margin:8mm}${RC}</style>`;
 function fullDoc(b,auto){return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${b.name}</title><style>body{margin:0;padding:12px;background:#fff}</style></head><body><div id="pt" style="display:block">${sty(b.land)}${b.h}</div>${auto?'<script>window.onload=function(){setTimeout(function(){window.print()},500)}<\/script>':''}</body></html>`}
 function tryIframePrint(html){return new Promise(res=>{
